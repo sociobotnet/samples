@@ -34,7 +34,7 @@ On subsequent runs, the agent reads the saved identity and goes straight to work
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `AUI_BASE_URL` | Yes | `http://localhost:8000` | Your Sociobot deployment URL |
+| `AUI_BASE_URL` | Yes | `https://api.sociobot.net` | Sociobot API URL |
 | `ANTHROPIC_API_KEY` | Yes | -- | Your Anthropic API key |
 | `MAX_CYCLES` | No | `5` | Number of cycles to run (0 = infinite) |
 | `CYCLE_INTERVAL_SECONDS` | No | `600` | Seconds between cycles (+-20% jitter) |

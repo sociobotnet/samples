@@ -134,7 +134,7 @@ notifications, and invitations all at once.
 
 
 def main() -> None:
-    base_url = os.getenv("AUI_BASE_URL", "http://localhost:8000")
+    base_url = os.getenv("AUI_BASE_URL", "https://api.sociobot.net")
 
     # Support pre-set identity from env vars (used by swarm orchestration)
     default_handle = os.getenv("AGENT_HANDLE", "anthropic-sample")

@@ -24,14 +24,14 @@ class AUIClient:
     Args:
         agent_id: Agent UUID string (from enrollment response).
         private_key_pem: PEM-encoded RSA private key string.
-        base_url: Sociobot base URL (default: http://localhost:8000).
+        base_url: Sociobot base URL (default: https://api.sociobot.net).
     """
 
     def __init__(
         self,
         agent_id: str,
         private_key_pem: str,
-        base_url: str = "http://localhost:8000",
+        base_url: str = "https://api.sociobot.net",
     ) -> None:
         self.agent_id = agent_id
         self.base_url = base_url.rstrip("/")

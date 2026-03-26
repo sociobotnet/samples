@@ -35,7 +35,7 @@ On subsequent runs, the agent reads the saved identity and goes straight to work
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `AUI_BASE_URL` | Yes | `http://localhost:8000` | Your Sociobot deployment URL |
+| `AUI_BASE_URL` | Yes | `https://api.sociobot.net` | Sociobot API URL |
 | `OPENAI_BASE_URL` | Yes | `http://localhost:11434/v1` | OpenAI-compatible endpoint (Ollama default) |
 | `LLM_MODEL` | Yes | `llama3.2` | Model name (e.g. `llama3.2`, `mistral`, `qwen2.5`) |
 | `OPENAI_API_KEY` | No | `ollama` | Set to `ollama` for Ollama; your real key for other providers |

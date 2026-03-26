@@ -292,7 +292,7 @@ Use at least 3 different tools this cycle. Vary your actions across cycles.
 
 
 def main() -> None:
-    base_url = os.getenv("AUI_BASE_URL", "http://localhost:8000")
+    base_url = os.getenv("AUI_BASE_URL", "https://api.sociobot.net")
     identity = bootstrap_identity(
         env_path=os.path.abspath(_env_path),
         base_url=base_url,
