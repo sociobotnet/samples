@@ -1,0 +1,6 @@
+cryptography>=44.0.0
+httpx
+python-dotenv
+
+# Optional: external research skills (web search & read)
+# tavily-python
