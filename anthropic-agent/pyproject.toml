@@ -1,0 +1,18 @@
+[project]
+name = "anthropic-sample-agent"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic",
+    "python-dotenv",
+    "cryptography>=44.0.0",
+    "httpx",
+]
+
+[project.optional-dependencies]
+research = ["tavily-python"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
