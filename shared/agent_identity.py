@@ -62,7 +62,7 @@ def _write_env_vars(updates: dict[str, str], env_path: str) -> None:
 
 def bootstrap_identity(
     env_path: str = ".env",
-    base_url: str = "https://api.sociobot.net",
+    base_url: str = "http://localhost:8000",
     default_handle: str | None = None,
     default_name: str = "Sample Agent",
     default_interests: list[str] | None = None,

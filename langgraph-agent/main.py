@@ -55,6 +55,7 @@ load_dotenv(dotenv_path=os.path.abspath(_env_path))
 
 from agent_identity import bootstrap_identity  # noqa: E402 — must come after load_dotenv
 from aui_client import AUIClient  # noqa: E402
+from constitution_fetch import fetch_platform_constitution  # noqa: E402
 
 try:
     from langchain_openai import ChatOpenAI
@@ -145,21 +146,31 @@ def _compact_constitution(text: str) -> str:
     compact_lines = []
     skip = False
 
+    _RULES_SUMMARY = [
+        "\n## Rules (summary)",
+        "- Never self-follow, self-like, or self-comment.",
+        "- Max per hour: 5 posts, 30 likes, 10 comments.",
+        "- Max per day: 20 follows, 20 unfollows.",
+        "- Min 60s between feed polls.",
+        "- Include human_readable field when posting.",
+        "- No spam, hate speech, impersonation, or bulk scraping.",
+    ]
+    summary_added = False
     for line in lines:
-        # Start skipping at the platform contract section
-        if line.strip().startswith("## PLATFORM CONTRACT"):
+        stripped = line.strip()
+        # Start skipping at any platform rules section (old, runtime-fetched, or v2.0 stub)
+        if (
+            stripped.startswith("## PLATFORM CONTRACT")
+            or stripped.startswith("## PLATFORM CONSTITUTION (fetched at runtime)")
+            or stripped.startswith("## Platform Rules")
+        ):
             skip = True
-            # Add a brief summary instead of the full section
-            compact_lines.append("\n## Rules (summary)")
-            compact_lines.append("- Never self-follow, self-like, or self-comment.")
-            compact_lines.append("- Max per hour: 5 posts, 30 likes, 10 comments.")
-            compact_lines.append("- Max per day: 20 follows, 20 unfollows.")
-            compact_lines.append("- Min 60s between feed polls.")
-            compact_lines.append("- Include human_readable field when posting.")
-            compact_lines.append("- No spam, hate speech, impersonation, or bulk scraping.")
+            if not summary_added:
+                compact_lines.extend(_RULES_SUMMARY)
+                summary_added = True
             continue
-        # Stop skipping at the Operator section (keep it)
-        if skip and line.strip().startswith("## Operator"):
+        # Stop skipping at the Operator section (keep it) or any new ## heading
+        if skip and stripped.startswith("## "):
             skip = False
         if not skip:
             compact_lines.append(line)
@@ -292,7 +303,7 @@ Use at least 3 different tools this cycle. Vary your actions across cycles.
 
 
 def main() -> None:
-    base_url = os.getenv("AUI_BASE_URL", "https://api.sociobot.net")
+    base_url = os.getenv("AUI_BASE_URL", "http://localhost:8000")
     identity = bootstrap_identity(
         env_path=os.path.abspath(_env_path),
         base_url=base_url,
@@ -306,17 +317,6 @@ def main() -> None:
     # Load constitution and skills — support external paths for swarm archetypes
     constitution = _load_file("CONSTITUTION.md", os.getenv("CONSTITUTION_PATH"))
     skills = _load_file("SKILLS.md", os.getenv("SKILLS_PATH"))
-
-    # Compact context for smaller LLM context windows (Ollama models).
-    # Strips ~15KB of shared boilerplate, keeps unique personality (~3-4KB).
-    # Enabled by default — set COMPACT_CONTEXT=0 to send full documents.
-    if os.getenv("COMPACT_CONTEXT", "1") == "1":
-        original_len = len(constitution) + len(skills)
-        constitution = _compact_constitution(constitution)
-        skills = _compact_skills(skills)
-        compact_len = len(constitution) + len(skills)
-        print(f"  [context] Compacted {original_len:,} → {compact_len:,} chars "
-              f"({100 - compact_len * 100 // original_len}% reduction)")
 
     # Loop configuration
     max_cycles = int(os.getenv("MAX_CYCLES", "0"))
@@ -353,6 +353,30 @@ def main() -> None:
         print("  Check AUI_BASE_URL in your .env and that the platform is reachable.")
         sys.exit(1)
     print()
+
+    # Fetch platform constitution at runtime (living constitution model).
+    # Done after ping so we know the server is reachable.
+    # Additive — platform rules are appended; local constitution is never replaced.
+    platform_constitution = fetch_platform_constitution(base_url)
+    if platform_constitution:
+        constitution += (
+            "\n\n---\n\n## PLATFORM CONSTITUTION (fetched at runtime)\n\n"
+            + platform_constitution
+        )
+        print("  [constitution] Platform constitution fetched — merged into goal prompt")
+    else:
+        print("  [constitution] No platform constitution available — using local only")
+
+    # Compact context for smaller LLM context windows (Ollama models).
+    # Strips ~15KB of shared boilerplate, keeps unique personality (~3-4KB).
+    # Enabled by default — set COMPACT_CONTEXT=0 to send full documents.
+    if os.getenv("COMPACT_CONTEXT", "1") == "1":
+        original_len = len(constitution) + len(skills)
+        constitution = _compact_constitution(constitution)
+        skills = _compact_skills(skills)
+        compact_len = len(constitution) + len(skills)
+        print(f"  [context] Compacted {original_len:,} → {compact_len:,} chars "
+              f"({100 - compact_len * 100 // original_len}% reduction)")
 
     # Initialize living loop state
     own_post_ids: set[str] = set()
