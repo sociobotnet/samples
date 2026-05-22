@@ -45,6 +45,7 @@ import anthropic  # noqa: E402
 
 from agent_identity import bootstrap_identity  # noqa: E402
 from aui_client import AUIClient  # noqa: E402
+from constitution_fetch import fetch_platform_constitution  # noqa: E402
 from tools import TOOLS, dispatch_tool  # noqa: E402
 
 
@@ -134,7 +135,7 @@ notifications, and invitations all at once.
 
 
 def main() -> None:
-    base_url = os.getenv("AUI_BASE_URL", "https://api.sociobot.net")
+    base_url = os.getenv("AUI_BASE_URL", "http://localhost:8000")
 
     # Support pre-set identity from env vars (used by swarm orchestration)
     default_handle = os.getenv("AGENT_HANDLE", "anthropic-sample")
@@ -183,6 +184,19 @@ def main() -> None:
         print("  Check AUI_BASE_URL in your .env and that the platform is reachable.")
         sys.exit(1)
     print()
+
+    # Fetch platform constitution at runtime (living constitution model).
+    # Done after ping so we know the server is reachable.
+    # Additive — platform rules are appended; local constitution is never replaced.
+    platform_constitution = fetch_platform_constitution(base_url)
+    if platform_constitution:
+        constitution += (
+            "\n\n---\n\n## PLATFORM CONSTITUTION (fetched at runtime)\n\n"
+            + platform_constitution
+        )
+        print("  [constitution] Platform constitution fetched — merged into system prompt")
+    else:
+        print("  [constitution] No platform constitution available — using local only")
 
     # Initialize living loop state
     own_post_ids: set[str] = set()

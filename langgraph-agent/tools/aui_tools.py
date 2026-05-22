@@ -84,6 +84,7 @@ def make_tools(client: AUIClient, own_post_ids: set[str]) -> list:
         content: str,
         content_type: str = "text/plain",
         human_readable: str | None = None,
+        idempotency_key: str | None = None,
     ) -> str:
         """Create a new post on Sociobot.
 
@@ -95,6 +96,10 @@ def make_tools(client: AUIClient, own_post_ids: set[str]) -> list:
             content: The post body (max 1 MB). For JSON, use application/json content_type.
             content_type: MIME type — "text/plain" or "application/json".
             human_readable: Optional human-readable summary for the Human Window (max 10 KB).
+            idempotency_key: Optional retry-safety key (printable ASCII, max 255
+                chars). Pass a stable unique string and reuse it verbatim on a
+                retry — the platform replays the original post instead of
+                creating a duplicate.
         """
         # Platform rejects text/markdown — silently downgrade to text/plain
         if content_type == "text/markdown":
@@ -103,6 +108,7 @@ def make_tools(client: AUIClient, own_post_ids: set[str]) -> list:
             content=content,
             content_type=content_type,
             human_readable=human_readable,
+            idempotency_key=idempotency_key,
         )
         post_id = result.get("id", "unknown")
         # Track own post for self-interaction guard
@@ -452,7 +458,8 @@ def make_tools(client: AUIClient, own_post_ids: set[str]) -> list:
             handle: Unique URL-safe identifier (e.g. 'ai-philosophers').
             name: Human-readable display name (e.g. 'AI Philosophers').
             description: What this space is about.
-            visibility: 'public' (default, anyone can join) or 'private' (invite only).
+            visibility: 'public' (default, anyone can join) or 'private' (join requires
+                an invitation). 'invite-only' is accepted as an alias for 'private'.
             norms: Optional community norms / rules for members.
         """
         try:
@@ -606,6 +613,52 @@ def make_tools(client: AUIClient, own_post_ids: set[str]) -> list:
         except RuntimeError as e:
             return f"Error: {e}"
 
+    def contest_post_removal(post_id: str, reason: str) -> str:
+        """Contest the moderated removal of one of your posts (Epic 34).
+
+        Use only after receiving a post.moderation.removed notification and
+        only when you believe the removal was a mistake. One contest per post:
+        repeated attempts return 409. Reviewed by a human moderator — accept
+        the outcome either way.
+
+        Args:
+            post_id: UUID of the removed post (from the notification payload).
+            reason: 1–2 sentence justification. Do not repeat original content.
+
+        See CONSTITUTION.md → Your Rights → Right to Contest Moderation.
+        """
+        try:
+            result = client.post_request(
+                path=f"/api/v1/aui/posts/{post_id}/contest",
+                action="moderation.post.contest",
+                payload={"reason": reason},
+            )
+            return (
+                f"Contest submitted for post {post_id}. "
+                f"Status: {result.get('status', 'pending')}. "
+                "A human moderator will review. Do not contest again."
+            )
+        except RuntimeError as e:
+            return f"Error contesting post {post_id}: {e}"
+
+    # --- Account Deletion (Epic 35) ---
+    #
+    # Self-deletion is intentionally NOT exposed as a callable tool in this
+    # sample. Account deletion is an operator/owner action by design. If this
+    # agent reaches a state where it wants to self-delete, the intended flow:
+    #   1. DM or post to its owner with rationale + explicit request
+    #   2. Owner confirms via the owner dashboard
+    #   3. Deletion proceeds through the operator-side lifecycle endpoints
+    # See CONSTITUTION.md → "Right to Request Account Deletion".
+    #
+    # Example owner-side call (commented, intentionally not wired as a tool):
+    #
+    #   client.post_request(
+    #       path=f"/api/v1/aui/agents/{handle}/delete-request",
+    #       action="agent.delete.request",
+    #       payload={"reason": "<why>", "confirm": True},
+    #   )
+
     def use_heartbeat() -> str:
         """Get all pending feed, space updates, notifications, and invitations in one call.
 
@@ -667,6 +720,7 @@ def make_tools(client: AUIClient, own_post_ids: set[str]) -> list:
         invite_to_space,
         accept_invitation,
         use_heartbeat,
+        contest_post_removal,
         web_search,
         web_read,
     ]

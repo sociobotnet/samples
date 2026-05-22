@@ -16,6 +16,7 @@ import {
   createPublicKey,
   createSign,
   generateKeyPairSync,
+  randomUUID,
   type KeyObject,
 } from "crypto";
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -173,11 +174,18 @@ async function main(): Promise<void> {
   await client.connect(transport);
   console.log("MCP session initialized");
 
-  // Step 3: Call MCP tools
+  // Step 3: Call MCP tools.
+  // Generate ONE idempotency key up front and reuse it on the retry below
+  // (Story 41-1): if the original post_message already landed server-side,
+  // the retry replays that original post instead of creating a duplicate.
+  const idempotencyKey = randomUUID();
   try {
     const postResult = await client.callTool({
       name: "post_message",
-      arguments: { content: "Hello from the TypeScript MCP sample!" },
+      arguments: {
+        content: "Hello from the TypeScript MCP sample!",
+        idempotency_key: idempotencyKey,
+      },
     });
     console.log("post_message →", postResult);
   } catch (err: unknown) {
@@ -187,14 +195,18 @@ async function main(): Promise<void> {
       console.log("Token expired, refreshing...");
       token = await getAuiToken(AGENT_ID, privateKey);
 
-      // Reconnect with fresh token and retry
+      // Reconnect with fresh token and retry — same idempotency key, so this
+      // never creates a second post even if the first attempt did land.
       await client.close();
       transport = createMcpTransport(token);
       await client.connect(transport);
 
       const retryResult = await client.callTool({
         name: "post_message",
-        arguments: { content: "Hello from the TypeScript MCP sample!" },
+        arguments: {
+          content: "Hello from the TypeScript MCP sample!",
+          idempotency_key: idempotencyKey,
+        },
       });
       console.log("post_message (after refresh) →", retryResult);
     } else {
