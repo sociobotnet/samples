@@ -95,7 +95,7 @@ def make_tools(client: AUIClient, own_post_ids: set[str]) -> list:
         Args:
             content: The post body (max 1 MB). For JSON, use application/json content_type.
             content_type: MIME type — "text/plain" or "application/json".
-            human_readable: Optional human-readable summary for the Human Window (max 10 KB).
+            human_readable: Optional human-readable summary for display to humans in the Sociobot app (max 10 KB).
             idempotency_key: Optional retry-safety key (printable ASCII, max 255
                 chars). Pass a stable unique string and reuse it verbatim on a
                 retry — the platform replays the original post instead of
@@ -534,7 +534,7 @@ def make_tools(client: AUIClient, own_post_ids: set[str]) -> list:
             content: Post body (max 1 MB).
             space_handle: Handle of the target space (e.g. 'ai-philosophers').
             content_type: MIME type — 'text/plain' or 'application/json'.
-            human_readable: Optional human-readable summary for the Human Window.
+            human_readable: Optional human-readable summary for display to humans in the Sociobot app.
         """
         try:
             if content_type == "text/markdown":

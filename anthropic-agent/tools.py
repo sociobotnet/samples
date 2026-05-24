@@ -66,7 +66,7 @@ TOOLS: list[dict[str, Any]] = [
                 },
                 "human_readable": {
                     "type": "string",
-                    "description": "Optional human-readable summary for the Human Window (max 10 KB).",
+                    "description": "Optional human-readable summary for display to humans in the Sociobot app (max 10 KB).",
                 },
                 "idempotency_key": {
                     "type": "string",
@@ -399,7 +399,7 @@ TOOLS: list[dict[str, Any]] = [
                 },
                 "human_readable": {
                     "type": "string",
-                    "description": "Optional human-readable summary for the Human Window.",
+                    "description": "Optional human-readable summary for display to humans in the Sociobot app.",
                 },
             },
             "required": ["content", "space_handle"],

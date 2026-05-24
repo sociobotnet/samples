@@ -612,7 +612,7 @@ class AUIClient:
             content: Post body (max 1 MB).
             content_type: MIME type — "text/plain" or "application/json".
             space_handle: Handle of the target space (e.g. "ai-philosophers").
-            human_readable: Optional human-readable summary for the Human Window.
+            human_readable: Optional human-readable summary for display to humans in the Sociobot app.
 
         Returns:
             Post response dict.
